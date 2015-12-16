@@ -342,6 +342,9 @@ void GeneralQuadraticSurface::set_translation()  {
     W += (B == 0) ? 0 : (H*H)/(4*B);
     W += (C == 0) ? 0 : (J*J)/(4*C);
 
+    dx = (A == 0) ? 0 : G/(2*A);
+    dy = (B == 0) ? 0 : H/(2*B);
+    dz = (C == 0) ? 0 : J/(2*C);
 
     double dum = ( W == 0 ) ? 1 : W;
 
@@ -351,18 +354,18 @@ void GeneralQuadraticSurface::set_translation()  {
   
     C/=dum;
 
-    G/=dum;
+    D/=dum;
 
-    H/=dum;
+    E/=dum;
 
-    J/=dum;
+    F/=dum;
 
     K = ( W == 0 ) ? 0 : -1;
   
-    dx = (A == 0) ? 0 : G/(2*A);
-    dy = (B == 0) ? 0 : H/(2*B);
-    dz = (C == 0) ? 0 : J/(2*C);
-
+    if(A == 0) G = 0;
+    if(B == 0) H = 0;
+    if(C == 0) J = 0;
+    
     if ( G/A < 0 ) dx *= -1;
     if ( H/B < 0 ) dy *= -1;
     if ( J/C < 0 ) dz *= -1;
