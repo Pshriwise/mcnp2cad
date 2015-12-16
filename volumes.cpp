@@ -332,6 +332,61 @@ protected:
 #endif /* HAVE_IGEOM_CONE */
 
 
+void GeneralQuadraticSurface::determine_type() {
+
+  //create coefficient matrix
+  arma::mat Aa;
+  Aa << A << D/2 << F/2 << arma::endr
+     << D/2 << B <<  E/2 << arma::endr
+     << F/2 << E/2 << C << arma::endr;  
+  //create hessian matrix
+  arma::mat Ac;
+  Ac << A << D/2 << F/2 << G/2 << arma::endr
+  << D/2 << B << E/2 <<H/2 << arma::endr
+  << F/2 << E/2 << C << J/2 << arma::endr
+  << G/2 <<  H/2 << J/2 << K << arma::endr;
+
+
+  double determinant = arma::det(Ac);
+
+  int delta;
+  if ( fabs(determinant) < 1e-10 )
+    delta = 0;
+  else
+    delta = (determinant<0) ? -1:1;
+
+  int rt = arma::rank(Aa);
+  int rf = arma::rank(Ac);
+
+  arma::vec eigenvals = arma::eig_sym(Aa);
+
+  
+  arma::vec signs = arma::sign(eigenvals);
+
+  int S = (fabs(arma::sum(signs)) == 3) ? 1:-1;
+
+  if( 3 == rt && 4 == rf && -1 == delta && 1 == S)
+    type = ELLIPSOID;
+  else if( 3 == rt && 4 == rf && 1 == delta && -1 == S)
+    type = ONE_SHEET_HYPERBOLOID;
+  else if( 3 == rt && 4 == rf && -1 == delta && -1 == S)
+    type = TWO_SHEET_HYPERBOLOID;
+  else if( 3 == rt && 3 == rf && 0 == delta && -1 == S)
+    type = ELLIPTIC_CONE;
+  else if( 2 == rt && 4 == rf && -1 == delta && 1 == S)
+    type = ELLIPTIC_PARABOLOID;
+  else if( 2 == rt && 4 == rf && 1 == delta && -1 == S)
+    type = HYPERBOLIC_PARABOLOID;
+  else if( 2 == rt && 3 == rf && -1 == delta && 1 == S)
+    type = ELLIPTIC_CYL;
+  else if( 2 == rt && 3 == rf && 0 == delta && -1 == S)
+    type = HYPERBOLIC_CYL;
+  else if( 1 == rt && 3 == rf && 0 == delta && 1 == S)
+    type = PARABOLIC_CYL;
+  else
+    type = UNKNOWN;
+     
+}
 
 void GeneralQuadraticSurface::set_translation()  {
     

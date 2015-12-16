@@ -67,13 +67,11 @@ iBase_EntityHandle applyReverseTransform( const Transform& tx, iGeom_Instance& i
 
 
 
-
-
-
 class GeneralQuadraticSurface : public SurfaceVolume {
 
 public:
   double A,B,C,D,E,F,G,H,J,K;
+  int type;
 
   GeneralQuadraticSurface( double _A, 
 			   double _B,
@@ -91,11 +89,24 @@ public:
   }
 
 protected:
+  enum GQ_TYPE {UNKNOWN = 0,
+		ELLIPSOID,
+		ONE_SHEET_HYPERBOLOID,
+		TWO_SHEET_HYPERBOLOID,
+		ELLIPTIC_CONE,
+		ELLIPTIC_PARABOLOID,
+		HYPERBOLIC_PARABOLOID,
+		ELLIPTIC_CYL,
+		HYPERBOLIC_CYL,
+		PARABOLIC_CYL};
 
+  
   Vector3d translation;
   double rotation_mat[9];
   double extents[3];
 
+  void determine_type();
+  
   void set_translation();
   
   void set_rotation();
