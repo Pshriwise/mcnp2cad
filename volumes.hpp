@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include "iGeom.h"
+#include <armadillo>
 
 // TODO: clean this igeom check function up
 #define CHECK_BUF_SIZE 512
