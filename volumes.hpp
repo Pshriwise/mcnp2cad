@@ -1,6 +1,7 @@
 #ifndef MCNP2CAD_VOLUMES_H
 #define MCNP2CAD_VOLUMES_H
 
+#include <assert.h>
 #include <cstdlib>
 #include "iGeom.h"
 #include <armadillo>
@@ -84,8 +85,11 @@ public:
 			   double _J,
 			   double _K ) :
     A(_A),B(_B),C(_C),D(_D),E(_E),F(_F),G(_G),H(_H),J(_J),K(_K)
-  {     set_translation();
-        set_rotation();
+  {
+    characterize();
+    set_translation();
+    //    characterize();
+    set_rotation();
   }
 
 protected:
@@ -105,7 +109,7 @@ protected:
   double rotation_mat[9];
   double extents[3];
 
-  void determine_type();
+  void characterize();
   
   void set_translation();
   
@@ -119,7 +123,7 @@ virtual iBase_EntityHandle getHandle( bool positive, iGeom_Instance& igm, double
   { 
 
     std::cout << "Final Coeffs of GQ" << std::endl;
-
+    std::cout << "Type: " << type << std::endl;
     std::cout << "A= " << A << std::endl;
     std::cout << "B= " << B << std::endl;
     std::cout << "C= " << C << std::endl;
@@ -131,9 +135,73 @@ virtual iBase_EntityHandle getHandle( bool positive, iGeom_Instance& igm, double
 
     iBase_EntityHandle gq_handle;
     int igm_result=0;
-    iGeom_GQ(igm,A,B,C,D,E,F,G,H,J,K,world_size,&gq_handle,&igm_result);
-    CHECK_IGEOM( igm_result, "Creating intial GQ");
 
+    if (type != ELLIPTIC_CONE) {
+      iGeom_GQ(igm,A,B,C,D,E,F,G,H,J,K,world_size,type,&gq_handle,&igm_result);
+      CHECK_IGEOM( igm_result, "Creating intial GQ");
+    }
+    else {
+      
+      assert( 0 != A && 0 != B && 0 != C);
+
+      double minor_radius,major_radius,rot_angle;
+      int rot_axis;
+      //establish orientation
+      if (A < 0) 
+	{
+	  minor_radius = world_size*sqrt(C/-A);
+	  major_radius = world_size*sqrt(B/-A);
+	  rot_angle = -90;
+	  rot_axis = 1;
+	}
+      else if (B < 0)
+	{ 
+	  minor_radius = world_size*sqrt(A/-B);
+	  major_radius = world_size*sqrt(C/-B);
+	  rot_angle = 90;
+	  rot_axis = 0;
+	}
+      else if (C < 0) 
+	{
+	  minor_radius = world_size*sqrt(A/-C);
+	  major_radius = world_size*sqrt(B/-C);
+	  rot_angle = 180;
+	  rot_axis = 0;
+	}
+
+      //create cone
+      iBase_EntityHandle pos_cone;
+      iGeom_createCone(igm,world_size,major_radius,minor_radius,0,&pos_cone,&igm_result);
+      CHECK_IGEOM(igm_result, "Creating positive cone for GQ.");
+
+      //now move the cone s.t. the point is on the origin
+      iGeom_moveEnt(igm,pos_cone,0,0,-world_size/2,&igm_result);
+      CHECK_IGEOM(igm_result, "Moving positive cone for GQ.");
+
+      double rot_vec[3] = {0,0,0};
+      rot_vec[rot_axis] = 1;
+
+      //rotate to proper axis
+      iGeom_rotateEnt(igm,pos_cone,rot_angle,rot_vec[0],rot_vec[1],rot_vec[2],&igm_result);
+      CHECK_IGEOM(igm_result, "Rotating positive cone for GQ.");
+
+      //create a copy
+      iBase_EntityHandle neg_cone;
+      iGeom_copyEnt(igm,pos_cone,&neg_cone,&igm_result);
+      CHECK_IGEOM(igm_result, "Copying positive cone for GQ.");
+
+      iGeom_rotateEnt(igm,neg_cone,180,rot_vec[0],rot_vec[1],rot_vec[2],&igm_result);
+      CHECK_IGEOM(igm_result, "Rotating negative cone for GQ.");
+
+      iBase_EntityHandle cones[2] = {pos_cone,neg_cone};
+      iGeom_uniteEnts(igm,cones,2,&gq_handle,&igm_result);
+      CHECK_IGEOM(igm_result, "Uniting positive and negative cones for GQ.");
+      
+      
+    }
+
+    
+    
     Transform gq_transform(rotation_mat,translation);
 
     //move back to original orientation

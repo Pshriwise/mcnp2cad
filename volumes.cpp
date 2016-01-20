@@ -332,7 +332,7 @@ protected:
 #endif /* HAVE_IGEOM_CONE */
 
 
-void GeneralQuadraticSurface::determine_type() {
+void GeneralQuadraticSurface::characterize() {
 
   //create coefficient matrix
   arma::mat Aa;
@@ -350,7 +350,7 @@ void GeneralQuadraticSurface::determine_type() {
   double determinant = arma::det(Ac);
 
   int delta;
-  if ( fabs(determinant) < 1e-10 )
+  if ( fabs(determinant) < 1e-9 )
     delta = 0;
   else
     delta = (determinant<0) ? -1:1;
@@ -389,43 +389,34 @@ void GeneralQuadraticSurface::determine_type() {
 }
 
 void GeneralQuadraticSurface::set_translation()  {
-    
-    double dx,dy,dz,W;
+
+  double dx,dy,dz;
+    //create coefficient matrix
+  arma::mat Aa;
+  Aa << A << D/2 << F/2 << arma::endr
+     << D/2 << B <<  E/2 << arma::endr
+     << F/2 << E/2 << C << arma::endr;  
+
+  arma:: mat Ai = Aa.i();
+
+  arma:: mat b;
+  b << -G/2 << arma::endr
+    << -H/2 << arma::endr
+    << -J/2 << arma::endr;
+
+  arma::mat c = Ai*b;
+  dx = c[0];
+  dy = c[1];
+  dz = c[2];
+
+  std::cout << "dx : " << dx << std::endl;
+  std::cout << "dy : " << dy << std::endl;
+  std::cout << "dz : " << dz << std::endl;
+
+      
+  K = K + (G/2)*dx + (H/2)*dy + (J/2)*dz;
   
-    W = -K;
-    W += (A == 0) ? 0 : (G*G)/(4*A);
-    W += (B == 0) ? 0 : (H*H)/(4*B);
-    W += (C == 0) ? 0 : (J*J)/(4*C);
-
-    dx = (A == 0) ? 0 : G/(2*A);
-    dy = (B == 0) ? 0 : H/(2*B);
-    dz = (C == 0) ? 0 : J/(2*C);
-
-    double dum = ( W == 0 ) ? 1 : W;
-
-    A/=dum;
-
-    B/=dum;
-  
-    C/=dum;
-
-    D/=dum;
-
-    E/=dum;
-
-    F/=dum;
-
-    K = ( W == 0 ) ? 0 : -1;
-  
-    if(A == 0) G = 0;
-    if(B == 0) H = 0;
-    if(C == 0) J = 0;
-    
-    if ( G/A < 0 ) dx *= -1;
-    if ( H/B < 0 ) dy *= -1;
-    if ( J/C < 0 ) dz *= -1;
-    
-    translation = Vector3d(dx,dy,dz);
+  translation = Vector3d(dx,dy,dz);
 
     return;
 
@@ -440,13 +431,13 @@ void GeneralQuadraticSurface::set_rotation()
   Matrix3 coeff_mat(A,D/2,F/2,
 		    D/2,B,E/2,
 		    F/2,E/2,C);
-
+  
   double eigen_vals[3];
 
   Vector3d eigen_vects[3];
-
+  
   Matrix::EigenDecomp(coeff_mat,eigen_vals,eigen_vects);
-
+  
   Vector3d x_ax(1,0,0);
   Vector3d y_ax(0,1,0);
   Vector3d z_ax(0,0,1);
@@ -495,6 +486,8 @@ void GeneralQuadraticSurface::set_rotation()
 
   //populate the rotation matrix
   std::copy(P.array(), P.array()+9, rotation_mat);
+
+  if (fabs(K) < 1.e-9) K = 0;
 }
 
 
