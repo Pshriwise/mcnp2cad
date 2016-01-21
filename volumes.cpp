@@ -361,22 +361,22 @@ iBase_EntityHandle GeneralQuadraticSurface::getHandle( bool positive, iGeom_Inst
       //establish orientation
       if (A < 0) 
 	{
-	  minor_radius = 2*world_size*sqrt(C/-A);
-	  major_radius = 2*world_size*sqrt(B/-A);
+	  minor_radius = 2*world_size*sqrt(-A/C);
+	  major_radius = 2*world_size*sqrt(-A/B);
 	  rot_angle = -90;
 	  rot_axis = 1;
 	}
       else if (B < 0)
 	{ 
-	  minor_radius = 2*world_size*sqrt(A/-B);
-	  major_radius = 2*world_size*sqrt(C/-B);
+	  minor_radius = 2*world_size*sqrt(-B/A);
+	  major_radius = 2*world_size*sqrt(-B/C);
 	  rot_angle = 90;
 	  rot_axis = 0;
 	}
       else if (C < 0) 
 	{
-	  minor_radius = 2*world_size*sqrt(A/-C);
-	  major_radius = 2*world_size*sqrt(B/-C);
+	  minor_radius = 2*world_size*sqrt(-C/A);
+	  major_radius = 2*world_size*sqrt(-C/B);
 	  rot_angle = 180;
 	  rot_axis = 0;
 	}
