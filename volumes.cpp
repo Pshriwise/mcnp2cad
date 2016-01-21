@@ -331,6 +331,107 @@ protected:
 
 #endif /* HAVE_IGEOM_CONE */
 
+iBase_EntityHandle GeneralQuadraticSurface::getHandle( bool positive, iGeom_Instance& igm, double world_size )
+  { 
+
+    std::cout << "Final Coeffs of GQ" << std::endl;
+    std::cout << "Type: " << type << std::endl;
+    std::cout << "A= " << A << std::endl;
+    std::cout << "B= " << B << std::endl;
+    std::cout << "C= " << C << std::endl;
+    std::cout << "D= " << D << std::endl;
+    std::cout << "E= " << E << std::endl;
+    std::cout << "F= " << F << std::endl;
+    std::cout << "K= " << K << std::endl;
+
+
+    iBase_EntityHandle gq_handle;
+    int igm_result=0;
+
+    if (type != ELLIPTIC_CONE) {
+      iGeom_GQ(igm,A,B,C,D,E,F,G,H,J,K,world_size,type,&gq_handle,&igm_result);
+      CHECK_IGEOM( igm_result, "Creating intial GQ");
+    }
+    else {
+      
+      assert( 0 != A && 0 != B && 0 != C);
+
+      double minor_radius,major_radius,rot_angle;
+      int rot_axis;
+      //establish orientation
+      if (A < 0) 
+	{
+	  minor_radius = 2*world_size*sqrt(C/-A);
+	  major_radius = 2*world_size*sqrt(B/-A);
+	  rot_angle = -90;
+	  rot_axis = 1;
+	}
+      else if (B < 0)
+	{ 
+	  minor_radius = 2*world_size*sqrt(A/-B);
+	  major_radius = 2*world_size*sqrt(C/-B);
+	  rot_angle = 90;
+	  rot_axis = 0;
+	}
+      else if (C < 0) 
+	{
+	  minor_radius = 2*world_size*sqrt(A/-C);
+	  major_radius = 2*world_size*sqrt(B/-C);
+	  rot_angle = 180;
+	  rot_axis = 0;
+	}
+
+      //create cone
+      iBase_EntityHandle pos_cone;
+      iGeom_createCone(igm,2*world_size,major_radius,minor_radius,0,&pos_cone,&igm_result);
+      CHECK_IGEOM(igm_result, "Creating positive cone for GQ.");
+
+      //now move the cone s.t. the point is on the origin
+      iGeom_moveEnt(igm,pos_cone,0,0,-world_size,&igm_result);
+      CHECK_IGEOM(igm_result, "Moving positive cone for GQ.");
+
+      double rot_vec[3] = {0,0,0};
+      rot_vec[rot_axis] = 1;
+
+      //rotate to proper axis
+      iGeom_rotateEnt(igm,pos_cone,rot_angle,rot_vec[0],rot_vec[1],rot_vec[2],&igm_result);
+      CHECK_IGEOM(igm_result, "Rotating positive cone for GQ.");
+
+      //create a copy
+      iBase_EntityHandle neg_cone;
+      iGeom_copyEnt(igm,pos_cone,&neg_cone,&igm_result);
+      CHECK_IGEOM(igm_result, "Copying positive cone for GQ.");
+
+      iGeom_rotateEnt(igm,neg_cone,180,rot_vec[0],rot_vec[1],rot_vec[2],&igm_result);
+      CHECK_IGEOM(igm_result, "Rotating negative cone for GQ.");
+
+      iBase_EntityHandle cones[2] = {pos_cone,neg_cone};
+      iGeom_uniteEnts(igm,cones,2,&gq_handle,&igm_result);
+      CHECK_IGEOM(igm_result, "Uniting positive and negative cones for GQ.");
+      
+      
+    }
+
+    
+    
+    Transform translation_transform(translation);
+    std::cout << translation << std::endl;
+    Transform rotation_transform(rotation_mat, Vector3d(0,0,0));
+    
+    //move back to original orientation
+    applyReverseTransform( rotation_transform, igm, gq_handle);
+    applyTransform(translation_transform, igm, gq_handle);
+
+    double xmin,xmax,ymin,ymax,zmin,zmax;
+    iGeom_getBoundBox(igm,&xmin,&ymin,&zmin,&xmax,&ymax,&zmax,&igm_result);
+    extents[0] = ( fabs(xmin) > fabs(xmax) ) ? xmin : xmax;
+    extents[1] = ( fabs(ymin) > fabs(ymax) ) ? ymin : ymax;
+    extents[2] = ( fabs(zmin) > fabs(zmax) ) ? zmin : zmax;
+
+    iBase_EntityHandle final_gq = embedWithinWorld(-positive, igm, world_size, gq_handle, true);
+    
+    return final_gq;
+  }
 
 void GeneralQuadraticSurface::characterize() {
 
@@ -450,7 +551,7 @@ void GeneralQuadraticSurface::set_rotation()
 
   Matrix3 P( eigen_vects[0], eigen_vects[1], eigen_vects[2] );
 
-  if ( fabs(P.determinant()-1.0) > 1e-6 ) //make sure we have a right-handed system
+  if (true) //make sure we have a right-handed system
     {
 
       Matrix3 new_P( eigen_vects[0], eigen_vects[2], eigen_vects[1]);
