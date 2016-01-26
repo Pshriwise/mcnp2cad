@@ -349,6 +349,10 @@ iBase_EntityHandle GeneralQuadraticSurface::getHandle( bool positive, iGeom_Inst
     int igm_result=0;
 
     if (type != ELLIPTIC_CONE) {
+      std::string filename = "end.sat";
+      //      iGeom_save(igm, filename.c_str(), NULL, &igm_result, filename.length(), 0);
+      //      CHECK_IGEOM(igm_result, "");
+      //      throw std::runtime_error("Encountered GQ which is not an elliptic real cone.");
       iGeom_GQ(igm,A,B,C,D,E,F,G,H,J,K,world_size,type,&gq_handle,&igm_result);
       CHECK_IGEOM( igm_result, "Creating intial GQ");
     }
@@ -451,7 +455,7 @@ void GeneralQuadraticSurface::characterize() {
   double determinant = arma::det(Ac);
 
   int delta;
-  if ( fabs(determinant) < 1e-9 )
+  if ( fabs(determinant) < 1e-8 )
     delta = 0;
   else
     delta = (determinant<0) ? -1:1;
@@ -460,10 +464,16 @@ void GeneralQuadraticSurface::characterize() {
   int rf = arma::rank(Ac);
 
   arma::vec eigenvals = arma::eig_sym(Aa);
+  std::cout << eigenvals << std::endl;
+  //  if(fabs(eigenvals[0]) < 1.e-9) eigenvals[0] = 0;
+  // if(fabs(eigenvals[1]) < 1.e-9) eigenvals[1] = 0;
+  // if(fabs(eigenvals[2]) < 1.e-9) eigenvals[2] = 0;
 
   
   arma::vec signs = arma::sign(eigenvals);
-
+  for(unsigned int i = 0; i < 3; i++)
+    if(fabs(eigenvals[i]) < 1e-9) signs[i] = 1;
+  
   int S = (fabs(arma::sum(signs)) == 3) ? 1:-1;
 
   if( 3 == rt && 4 == rf && -1 == delta && 1 == S)
@@ -486,7 +496,58 @@ void GeneralQuadraticSurface::characterize() {
     type = PARABOLIC_CYL;
   else
     type = UNKNOWN;
-     
+
+  if(type == UNKNOWN && 1 == S) {
+    //calculate D and try again
+    //    arma:: mat Ai = Aa.i();
+
+    arma:: mat b;
+    b << -G/2 << arma::endr
+      << -H/2 << arma::endr
+      << -J/2 << arma::endr;
+
+    arma::mat c = arma::solve(Aa,b);
+    
+    double dx,dy,dz;
+    dx = c[0];
+    dy = c[1];
+    dz = c[2];
+
+    std::cout << "dx : " << dx << std::endl;
+    std::cout << "dy : " << dy << std::endl;
+    std::cout << "dz : " << dz << std::endl;
+
+      
+    double dprime = K + (G/2)*dx + (H/2)*dy + (J/2)*dz;
+
+    delta = ((dprime < 0 && signs[0] < 0) || (dprime > 0 && signs[0] > 0)) ? -1:1;
+    
+  }
+  else {
+    return;
+  }
+
+    if( 3 == rt && 4 == rf && -1 == delta && 1 == S)
+    type = ELLIPSOID;
+  else if( 3 == rt && 4 == rf && 1 == delta && -1 == S)
+    type = ONE_SHEET_HYPERBOLOID;
+  else if( 3 == rt && 4 == rf && -1 == delta && -1 == S)
+    type = TWO_SHEET_HYPERBOLOID;
+  else if( 3 == rt && 3 == rf && 0 == delta && -1 == S)
+    type = ELLIPTIC_CONE;
+  else if( 2 == rt && 4 == rf && -1 == delta && 1 == S)
+    type = ELLIPTIC_PARABOLOID;
+  else if( 2 == rt && 4 == rf && 1 == delta && -1 == S)
+    type = HYPERBOLIC_PARABOLOID;
+  else if( 2 == rt && 3 == rf && -1 == delta && 1 == S)
+    type = ELLIPTIC_CYL;
+  else if( 2 == rt && 3 == rf && 0 == delta && -1 == S)
+    type = HYPERBOLIC_CYL;
+  else if( 1 == rt && 3 == rf && 0 == delta && 1 == S)
+    type = PARABOLIC_CYL;
+  else
+    type = UNKNOWN;
+
 }
 
 void GeneralQuadraticSurface::set_translation()  {
@@ -516,6 +577,7 @@ void GeneralQuadraticSurface::set_translation()  {
 
       
   K = K + (G/2)*dx + (H/2)*dy + (J/2)*dz;
+  std::cout << K << std::endl;
   
   translation = Vector3d(dx,dy,dz);
 
@@ -573,6 +635,9 @@ void GeneralQuadraticSurface::set_rotation()
       
     }
 
+  //if our type is elliptic_cyl or hyperbolic_cyl, we have some more work to do
+
+    
   A = eigen_vals[0];
   B = eigen_vals[1];
   C = eigen_vals[2];
@@ -580,7 +645,10 @@ void GeneralQuadraticSurface::set_rotation()
   E = 0.0; 
   F = 0.0;
 
-   
+
+  if(fabs(A) < 1.e-9) A = 0;
+  if(fabs(B) < 1.e-9) B = 0;
+  if(fabs(C) < 1.e-9) C = 0;
 
   //calculate angles of rotation
   //P = P.transpose(); //transpose P to get the correct conversion
@@ -588,7 +656,9 @@ void GeneralQuadraticSurface::set_rotation()
   //populate the rotation matrix
   std::copy(P.array(), P.array()+9, rotation_mat);
 
-  if (fabs(K) < 1.e-9) K = 0;
+  if (fabs(K) < 1.e-8) K = 0;
+  //else if(K > 0) K = 1;
+  //else if (K < 0) K = -1;
 }
 
 

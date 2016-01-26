@@ -87,6 +87,7 @@ public:
     A(_A),B(_B),C(_C),D(_D),E(_E),F(_F),G(_G),H(_H),J(_J),K(_K)
   {
     characterize();
+    std::cout << "Type: " << type << std::endl;
     set_translation();
     //    characterize();
     set_rotation();
@@ -116,7 +117,7 @@ protected:
   void set_rotation();
 
   virtual double getFarthestExtentFromOrigin ( ) const {
-    return sqrt( extents[0]*extents[0] + extents[1]*extents[1] + extents[2]*extents[2]);
+    return 0;
   }
 
   virtual iBase_EntityHandle getHandle( bool positive, iGeom_Instance& igm, double world_size );
