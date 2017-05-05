@@ -2,13 +2,22 @@
 MCNP2CAD README
 ===============
 
-MCNP to iGeom/CAD converter: a program to extract the geomtery from MCNP 
-input files and write it out using any ITAPS iGeom backend. 
+MCNP to iGeom/CAD converter: a program to extract the geomtery from MCNP
+input files and write it out using any ITAPS iGeom backend.
 
 **This project is currently in transition based on changes to the underlying
 CGM library.  The end state of this code will be a library that relies upon an
 iGeom-like implementation to perform the solid model manipulations.  That
-iGeom-like implementation will be supported by other groups.**
+iGeom-like implementation will be supported by other groups.
+
+The following groups intend to support such implementations:
+
+* CNERG will develop an iGeom-like interface as part of a Trelis & Cubit
+  plugin that uses this library to import MCNP geometry into Trelis/Cubit
+
+* The SIGMA team will develop an iGeom-like interface as part of an
+  implementation of CGM that is based on the OpenCascade solid modeling
+  engine.  This version may support a command line tool.
 
 The following groups intend to support such implementations:
 
@@ -41,7 +50,7 @@ If building the command line interface, also include the following flag:
 
 -DBUILD_CLI=yes
 
-Unsupported Features: 
+Unsupported Features:
 -----------------------
 
 * Could be added easily:
@@ -53,7 +62,7 @@ Unsupported Features:
 * Could be added with effort:
    * Correct handling of hexagonal prism lattices for lattices based on irregular
      hexgons
-   * Support for `ELL` (ellipse), `WED` (wedge), and `ARB` (arbitrary polyhedron) 
+   * Support for `ELL` (ellipse), `WED` (wedge), and `ARB` (arbitrary polyhedron)
      macrobodies
    * Ability to refer to individual facets of macrobodies as surfaces in cell
      specification, using the `NNNN.MM` syntax.  Parsing support for this feature
@@ -63,7 +72,7 @@ Unsupported Features:
    * Complete support for `M=-1` argument in `TRn` (transform) cards.
    * Automatically annotate reflecting/white boundaries and periodic surfaces.
    * Support for 3-arg and 5-arg specification of rotations in transformations.
-   * Support for jump (`nJ`) syntax: requires knowledge of default values in 
+   * Support for jump (`nJ`) syntax: requires knowledge of default values in
      many possible contexts
 
 * Could be added with substantial effort:
@@ -84,4 +93,3 @@ Unsupported Features:
 .. _SIGMA: http://sigma.mcs.anl.gov
 .. _CGM: http://sigma.mcs.anl.gov/cgm-library/
 .. _OpenCascade: https://www.opencascade.com/
-
